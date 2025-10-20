@@ -1,0 +1,13 @@
+{
+  "name": "sso-auth",
+  "version": "1.0.0",
+  "description": "SSO authentication plugin for Strapi",
+  "strapi": {
+    "name": "sso-auth",
+    "kind": "plugin",
+    "displayName": "SSO Authentication"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.0"
+  }
+}

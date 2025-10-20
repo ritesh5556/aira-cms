@@ -1,28 +1,13 @@
-// import type { Core } from '@strapi/strapi';
 const jwt = require('jsonwebtoken');
 
-export default {
-  /**
-   * An asynchronous register function that runs before
-   * your application is initialized.
-   *
-   * This gives you an opportunity to extend code.
-   */
-  register(/* { strapi }: { strapi: Core.Strapi } */) {},
+const SSO_SECRET = process.env.SSO_JWT_SECRET || process.env.SSO_SHARED_SECRET;
 
-  /**
-   * An asynchronous bootstrap function that runs before
-   * your application gets started.
-   *
-   * This gives you an opportunity to set up your data model,
-   * run jobs, or perform some special logic.
-   */
-  bootstrap({ strapi }: any) {
-    const SSO_SECRET = process.env.SSO_JWT_SECRET || process.env.SSO_SHARED_SECRET;
-    
-    // Add SSO route using Koa router
-    strapi.server.app.use(async (ctx: any, next: any) => {
-      if (ctx.method === 'GET' && ctx.path === '/sso-login') {
+module.exports = {
+  routes: [
+    {
+      method: 'GET',
+      path: '/sso-login',
+      handler: async (ctx) => {
         console.log('🔵 ========== SSO LOGIN ENDPOINT HIT ==========');
         console.log('🔵 Query params:', ctx.query);
         console.log('🔵 SSO_SECRET configured:', !!SSO_SECRET);
@@ -31,9 +16,7 @@ export default {
           const { token } = ctx.query;
           if (!token) {
             console.log('❌ No token provided');
-            ctx.status = 400;
-            ctx.body = { error: 'Missing token' };
-            return;
+            return ctx.badRequest('Missing token');
           }
 
           let payload;
@@ -41,11 +24,9 @@ export default {
             payload = jwt.verify(token, SSO_SECRET);
             console.log('✅ Token verified successfully');
             console.log('🔵 Payload:', payload);
-          } catch (err: any) {
+          } catch (err) {
             console.log('❌ Token verification failed:', err.message);
-            ctx.status = 401;
-            ctx.body = { error: 'Invalid token: ' + err.message };
-            return;
+            return ctx.unauthorized('Invalid token: ' + err.message);
           }
 
           const email = payload.email;
@@ -54,9 +35,7 @@ export default {
           
           if (!email) {
             console.log('❌ No email in token payload');
-            ctx.status = 400;
-            ctx.body = { error: 'Email not found in token' };
-            return;
+            return ctx.badRequest('Email not found in token');
           }
           
           console.log('🔵 Looking for admin user with email:', email);
@@ -76,9 +55,7 @@ export default {
             
             if (!superAdminRole) {
               console.log('❌ Super Admin role not found');
-              ctx.status = 500;
-              ctx.body = { error: 'Admin role configuration error' };
-              return;
+              return ctx.internalServerError('Admin role configuration error');
             }
             
             console.log('🔵 Creating admin user with role ID:', superAdminRole.id);
@@ -103,15 +80,13 @@ export default {
           // Check if user is active
           if (!adminUser.isActive) {
             console.log('❌ User account is not active');
-            ctx.status = 401;
-            ctx.body = { error: 'User account is not active' };
-            return;
+            return ctx.unauthorized('User account is not active');
           }
           
           console.log('🔵 Generating admin JWT token');
           
-          // Generate admin JWT token using Strapi 5 method
-          const adminJWT = strapi.service('admin::token').createJwtToken(adminUser);
+          // Generate admin JWT token
+          const adminJWT = strapi.admin.services.token.createJwtToken(adminUser);
           
           console.log('✅ Admin JWT generated');
           console.log('🔵 Setting cookie: jwtToken');
@@ -130,19 +105,16 @@ export default {
 
           // Redirect to Strapi dashboard
           ctx.redirect('/admin');
-          return;
           
-        } catch (error: any) {
+        } catch (error) {
           console.log('❌ SSO login error:', error);
-          ctx.status = 500;
-          ctx.body = { error: 'Authentication failed' };
-          return;
+          return ctx.internalServerError('Authentication failed');
         }
-      }
-      
-      await next();
-    });
-    
-    console.log('✅ SSO route registered at /sso-login');
-  },
+      },
+      config: {
+        auth: false,
+        policies: [],
+      },
+    },
+  ],
 };
