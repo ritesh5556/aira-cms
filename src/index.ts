@@ -111,7 +111,11 @@ export default {
           console.log('🔵 Generating admin JWT token');
           
           // Generate admin JWT token using Strapi 5 method
-          const adminJWT = strapi.service('admin::token').createJwtToken(adminUser);
+          // First, check what methods are available
+          console.log('🔵 Available token service methods:', Object.keys(strapi.service('admin::token')));
+          
+          // Try the correct method - in Strapi 5 it's just 'createToken'
+          const adminJWT = strapi.service('admin::token').createToken(adminUser);
           
           console.log('✅ Admin JWT generated');
           console.log('🔵 Setting cookie: jwtToken');
