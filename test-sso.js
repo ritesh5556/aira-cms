@@ -7,8 +7,8 @@ const SSO_JWT_SECRET = process.env.SSO_JWT_SECRET || 'your-shared-secret-key-her
 // Generate a test token
 const token = jwt.sign(
   {
-    email: "test@example.com",
-    name: "Test User",
+    email: "riteshsonawane34622@gmail.com",
+    name: "Ritesh Sonawane",
     exp: Math.floor(Date.now() / 1000) + (60 * 15) // 15 minutes
   },
   SSO_JWT_SECRET
